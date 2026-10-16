@@ -14,7 +14,7 @@ const Rec=(()=>{
   const configured=!SUPABASE_URL.includes('YOUR-PROJECT')&&!SUPABASE_ANON_KEY.includes('YOUR-ANON');
   const sb=configured&&window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
   const badge=(ok,text)=>{document.getElementById('saveBadge').classList.toggle('ok',ok);document.getElementById('saveText').textContent=text};
-  badge(!!sb,sb?'게임 기록 자동 저장 중':configured?'저장 라이브러리를 불러오지 못했어요':'Supabase 설정 전이라 기록이 저장되지 않아요');
+  badge(!!sb,sb?'기록 자동 저장':configured?'저장 라이브러리를 불러오지 못했어요':'Supabase 설정 전이라 기록이 저장되지 않아요');
   async function save(rec,retry){
     if(!sb)return;
     const {game,mode,human,ai,win,...detail}=rec;
@@ -31,9 +31,9 @@ const Rec=(()=>{
 const Records={
   async refresh(){
     if(!Rec.sb)return;
-    const {data,error}=await Rec.sb.from('plays').select('created_at,game,mode,human,ai,win,len').order('created_at',{ascending:false}).limit(500);
+    const {data,error}=await Rec.sb.from('plays').select('created_at,game,mode,human,ai,win,len,rank:detail->>rank').order('created_at',{ascending:false}).limit(500);
     if(error){toast('기록을 불러오지 못했어요');return}
-    this.render(data.map(r=>({ts:Date.parse(r.created_at),game:r.game,mode:r.mode,human:r.human,ai:r.ai,win:r.win,len:r.len})));
+    this.render(data.map(r=>({ts:Date.parse(r.created_at),game:r.game,mode:r.mode,human:r.human,ai:r.ai,win:r.win,len:r.len,rank:r.rank})));
   },
   render(list){
     const tiles=document.getElementById('r-tiles'),rows=document.getElementById('r-rows');
@@ -44,14 +44,15 @@ const Records={
     const y=by('yacht'),p=by('poker');
     tiles.innerHTML=tile('전체 게임',list.length,`오늘 ${nToday}판`)
       +tile('야추 · 사람 승률',rate(y),`${y.length}판 · 최적 AI ${rate(by('yacht','ev'))} / 상대 고려 ${rate(by('yacht','win'))}`)
-      +tile('포커 · 사람 승률',rate(p),`${p.length}게임 · 기본 AI ${rate(by('poker','basic'))} / 학습형 ${rate(by('poker','learn'))}`);
+      +tile('포커 · 사람 승률',rate(p),`${p.length}게임 · 기본 AI ${rate(by('poker','basic'))} / 학습형 ${rate(by('poker','learn'))}`)
+      +tile('포커 4인 · 1등 비율',rate(by('poker4')),`${by('poker4').length}게임`);
     if(!list.length){rows.innerHTML='<tr><td colspan="6" class="empty">아직 기록이 없어요. 야추 한 판이나 포커 한 게임을 끝내면 여기에 나타나요.</td></tr>';return}
-    const MODE={ev:'최적',win:'상대 고려',basic:'기본',learn:'학습형'};
+    const MODE={ev:'최적',win:'상대 고려',basic:'기본',learn:'학습형',multi:'AI 3명'};
     const fmt=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
     rows.innerHTML=list.slice(0,100).map(r=>{
-      const res=r.win===1?'<span class="pill win">사람 승</span>':r.win===0?'<span class="pill lose">AI 승</span>':'<span class="pill draw">무승부</span>';
+      const res=r.game==='poker4'?`<span class="pill ${r.rank==1?'win':'lose'}">${r.rank||'?'}등</span>`:r.win===1?'<span class="pill win">사람 승</span>':r.win===0?'<span class="pill lose">AI 승</span>':'<span class="pill draw">무승부</span>';
       const len=r.game==='yacht'?'12라운드':`${Number(r.len)||0}핸드`;
-      return `<tr><td class="n">${fmt(r.ts)}</td><td>${r.game==='yacht'?'야추':'포커'}</td><td>${MODE[r.mode]||'-'}</td><td>${res}</td><td class="n">${Number(r.human)||0} : ${Number(r.ai)||0}</td><td>${len}</td></tr>`;
+      return `<tr><td class="n">${fmt(r.ts)}</td><td>${r.game==='yacht'?'야추':r.game==='poker4'?'포커 4인':'포커'}</td><td>${MODE[r.mode]||'-'}</td><td>${res}</td><td class="n">${Number(r.human)||0} : ${Number(r.ai)||0}${r.game==='poker4'?' (AI 최고)':''}</td><td>${len}</td></tr>`;
     }).join('');
   }
 };

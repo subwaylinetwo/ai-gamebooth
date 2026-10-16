@@ -209,12 +209,12 @@ async function next(){
     const a=ai.decide(PK.view(h,1));
     await apply(1,a);if(t!==tok)return;
     next();
-  }else{ui.busy=false;render();SFX.play('turn')}
+  }else{ui.busy=false;ui.turnStart=performance.now();render();SFX.play('turn')}
 }
 async function humanAct(a){
   if(!ui||ui.busy||h.done||h.toAct!==0)return;
-  const t=tok;ui.busy=true;const before=h.board.slice();
-  await apply(0,a,()=>ai.observe(h.log[h.log.length-1],before));
+  const t=tok;ui.busy=true;const before=h.board.slice(),ms=Math.round(performance.now()-(ui.turnStart||performance.now()));
+  await apply(0,a,()=>{const r=h.log[h.log.length-1];r.ms=ms;ai.observe(r,before)});
   if(t!==tok)return;next();
 }
 async function apply(p,a,after){
@@ -304,7 +304,7 @@ async function finishHand(){
   if(sd&&ai.showdown)ai.showdown(h.hole[0]);
   if(ai.profile){const pf=ai.profile();notes.push(`AI가 파악한 당신: 베팅 받으면 ${Math.round(pf.foldToBet*100)}% 폴드 · 먼저 베팅 ${Math.round(pf.betWhenChecked*100)}% · 딜러일 때 참여 ${Math.round(pf.sbPlay*100)}%`)}
   $('aiRead').textContent=notes.length?'AI 머릿속 · '+notes.join(' · '):'';
-  handLog.push({btn:h.btn,you:h.hole[0].map(PK.cardStr),ai:h.hole[1].map(PK.cardStr),board:h.board.map(PK.cardStr),acts:h.log.map(r=>[r.p,r.street,r.t,r.to||0,r.toCall]),winner:h.winner,pot:h.potWon,sd,stacks:h.stacks.slice()});
+  handLog.push({btn:h.btn,you:h.hole[0].map(PK.cardStr),ai:h.hole[1].map(PK.cardStr),board:h.board.map(PK.cardStr),acts:h.log.map(r=>[r.p,r.street,r.t,r.to||0,r.toCall,r.ms||0]),winner:h.winner,pot:h.potWon,sd,stacks:h.stacks.slice()});
   stacks=h.stacks.slice();handNo++;btn=1-btn;
   if(stacks[0]<=0||stacks[1]<=0||handNo>=maxHands){
     matchOver=true;

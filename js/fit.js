@@ -9,10 +9,12 @@
     if(innerWidth<700){setP(Math.max(1,Math.round(1.7*d)));dispatchEvent(new Event('pchange'));return}
     let k=Math.max(1,Math.floor(Math.min(3,innerWidth/560)*d));const minK=Math.max(1,Math.ceil(1.2*d));
     setP(k);
-    const secs=['yacht','poker'].map(id=>document.getElementById(id)).filter(Boolean);
+    const secs=['yacht','poker','poker4'].map(id=>document.getElementById(id)).filter(Boolean);
     if(secs.length){
       const games=[...document.querySelectorAll('.game')],on=games.find(g=>g.classList.contains('on'));
-      const tall=()=>{let m=0;for(const sct of secs){games.forEach(g=>g.classList.toggle('on',g===sct));m=Math.max(m,document.documentElement.scrollHeight)}games.forEach(g=>g.classList.toggle('on',g===on));return m};
+      // 포커 오른쪽 칸 안에서 넘치는 만큼도 더함 (버튼이 잘리지 않게)
+      const sideOver=sct=>{const ps=sct.querySelector('.pside');return ps?Math.max(0,ps.scrollHeight-ps.clientHeight):0};
+      const tall=()=>{let m=0;for(const sct of secs){games.forEach(g=>g.classList.toggle('on',g===sct));m=Math.max(m,document.documentElement.scrollHeight+sideOver(sct))}games.forEach(g=>g.classList.toggle('on',g===on));return m};
       while(k>minK&&tall()>innerHeight){k--;setP(k)}
     }
     dispatchEvent(new Event('pchange'));

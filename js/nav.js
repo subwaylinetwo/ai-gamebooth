@@ -6,7 +6,7 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
   SFX.play('click');
   document.querySelectorAll('.nav button').forEach(x=>{x.classList.toggle('on',x===b);FX.setFrame(x,x===b?'orange':'dark')});
   document.querySelectorAll('.game').forEach(s=>s.classList.toggle('on',s.id===b.dataset.g));
-  BG.set(b.dataset.g==='yacht'||b.dataset.g==='poker'?b.dataset.g:'menu');
+  BG.set(b.dataset.g==='yacht'?'yacht':b.dataset.g==='poker'||b.dataset.g==='poker4'?'poker':'menu');
 });
 document.querySelectorAll('#rules .rtab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#rules .rtab').forEach(x=>{x.classList.toggle('on',x===b);FX.setFrame(x,x===b?'orange':'dark')});

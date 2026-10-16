@@ -216,6 +216,39 @@ select option{background:#22343a}
 #p-aiRead{margin-top:var(--p3)}
 #p-aiRead:empty{display:none}
 
+/* ================= 포커 4인 ================= */
+.opps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--p4)}
+.oseat{padding:var(--p2) var(--p3);min-width:0;display:flex;flex-direction:column}
+.ohead{display:flex;align-items:center;gap:var(--p3);min-width:0}
+.ohead .snum{font-family:var(--f7);font-size:calc(var(--p)*8);line-height:calc(var(--p)*10)}
+.ohead .snum span{color:#fff}
+.oinfo{min-width:0;flex:1}
+.nm{display:flex;align-items:center;gap:var(--p2);flex-wrap:nowrap;white-space:nowrap}
+.pbadge{background:#5f7479;color:#fff;text-shadow:none;padding:0 var(--p2)}
+.pbadge:empty{display:none}
+.c0{color:var(--blue)}.c1{color:#ff7a70}.c2{color:#9fc4dc}.c3{color:var(--orange)}
+.oseat[data-k="rock"] .ava{filter:hue-rotate(170deg)}
+.oseat[data-k="fox"] .ava{filter:hue-rotate(35deg) saturate(1.4)}
+.ocards{display:flex;gap:var(--p4);justify-content:center;margin:var(--p2) 0}
+.obet{display:flex;align-items:center;gap:var(--p2);visibility:hidden;flex:none}
+.obet.on{visibility:visible}
+.obet img{width:calc(var(--p)*10);height:calc(var(--p)*10)}
+.obet .amt{color:#ff9d96}
+.oseat .bubble{visibility:hidden;min-height:calc(var(--p)*20);padding:0 var(--p3);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bubble.hand b{color:#98691b}
+.oseat .bubble.on{visibility:visible}
+.oseat .bubble b{font-family:var(--f9);font-size:calc(var(--p)*10);line-height:calc(var(--p)*14)}
+.oseat .bubble small{display:none}
+.oseat.out{opacity:.35}
+#q-table .center{margin:var(--p3) 0}
+#q-deck{visibility:hidden}
+.brow{display:flex;align-items:center;justify-content:center;gap:var(--p6);flex-wrap:wrap}
+#q-table .seat{margin-top:0}
+#q-say0{display:none}
+#q-hand0{min-height:calc(var(--p)*14)}
+.hrow i.c0{color:var(--blue)}.hrow i.c1{color:#ff7a70}.hrow i.c2{color:#9fc4dc}.hrow i.c3{color:var(--orange)}
+@media(max-width:700px){.ocards .pc+.pc{margin-left:calc(var(--p)*-20)}.opps{gap:var(--p2)}.oseat{padding:var(--p2)}.ohead .ava{display:none}}
+
 /* ================= 규칙 · 기록 ================= */
 .page{max-width:calc(var(--p)*380);margin:0 auto;padding:var(--p8) var(--p12)}
 .page h2{font-family:var(--f14);font-size:calc(var(--p)*15);line-height:calc(var(--p)*20);margin:0 0 var(--p4);color:var(--gold)}
@@ -245,10 +278,10 @@ select option{background:#22343a}
   html,body{height:100%}
   body{display:flex;flex-direction:column;padding-bottom:var(--p6)}
   .shell{flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
-  #poker.on{flex:1;min-height:0}
-  #poker .play{height:100%}
-  #poker .pleft,#poker .pside{height:100%;min-height:0}
-  #poker .pside{overflow:auto}
-  #poker .hist{flex:1 1 0;min-height:calc(var(--p)*26);max-height:none}
+  #poker.on,#poker4.on{flex:1;min-height:0}
+  #poker .play,#poker4 .play{height:100%}
+  #poker .pleft,#poker .pside,#poker4 .pleft,#poker4 .pside{height:100%;min-height:0}
+  #poker .pside,#poker4 .pside{overflow:auto}
+  #poker .hist,#poker4 .hist{flex:1 1 0;min-height:calc(var(--p)*26);max-height:none}
 }
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}

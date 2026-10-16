@@ -325,5 +325,5 @@ function makeAIBasic(rng){
   };
   return ai;
 }
-return {mul,evalHand,handName,cardStr,COMBOS,initPreflop,newHand,legal,act,view,makeAI,makeAIBasic,BB,SB,pot};
+return {mul,evalHand,handName,cardStr,COMBOS,initPreflop,newHand,legal,act,view,makeAI,makeAIBasic,BB,SB,pot,prePct:()=>PRE_PCT};
 })();

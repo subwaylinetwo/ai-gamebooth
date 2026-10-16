@@ -30,6 +30,17 @@ async function flip(el,c){
   setCard(el,c,true);SFX.play('card');
   if(FX.visible(el))await el.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:110,easing:'steps(4,end)'}).finished;
 }
+// 올인 후 양쪽 패가 공개됐을 때 승률: 남은 카드가 2장 이하면 전부 세고, 더 많으면 무작위로 3000번 깔아 봄
+function runEq(vis){
+  const used=new Set([...h.hole[0],...h.hole[1],...vis]),deck=[];for(let c=0;c<52;c++)if(!used.has(c))deck.push(c);
+  const need=5-vis.length;let w=[0,0],n=0;
+  const score=bd=>{const a=PK.evalHand([...h.hole[0],...bd]),b=PK.evalHand([...h.hole[1],...bd]);if(a>b)w[0]++;else if(b>a)w[1]++;else{w[0]+=.5;w[1]+=.5}n++};
+  if(need===0)score(vis);
+  else if(need===1)for(const c of deck)score([...vis,c]);
+  else if(need===2){for(let i=0;i<deck.length;i++)for(let j=i+1;j<deck.length;j++)score([...vis,deck[i],deck[j]])}
+  else for(let k=0;k<3000;k++){const d=deck.slice(),bd=vis.slice();for(let m=0;m<need;m++){const r=m+Math.floor(Math.random()*(d.length-m));[d[m],d[r]]=[d[r],d[m]];bd.push(d[m])}score(bd)}
+  return [w[0]/n,w[1]/n];
+}
 // 지금 가진 카드로 만든 족보와, 그 족보를 만드는 카드
 function bestInfo(cards){
   if(cards.length<5){
@@ -73,6 +84,7 @@ const lastOpp=()=>{for(let i=h.log.length-1;i>=0;i--)if(h.log[i].p===1)return h.
 function guide(){
   const g=$('guide'),tag=t=>`<span class="gtag">${t}</span> `;
   if(ui.result){g.className='guide fr-dark '+ui.resClass;g.innerHTML=tag('결과')+ui.result;return}
+  if(ui.allin){g.className='guide fr-dark';g.innerHTML=tag('올인')+'<b>둘 다 올인! 카드를 공개하고 남은 카드를 돌려요</b><small>이름 아래 승률은 남은 카드가 어떻게 나올 수 있는지 다 따져 본 확률이에요</small>';return}
   if(ui.thinking){g.className='guide fr-dark';g.innerHTML=tag('AI 차례')+'<b>AI가 고민 중이에요…</b><small>AI의 말풍선에 무엇을 했는지 나와요</small>';return}
   const myTurn=!ui.busy&&!h.done&&h.toAct===0;
   if(!myTurn){g.className='guide fr-dark';g.innerHTML=tag('진행 중')+'<b>카드를 나누는 중…</b>';return}
@@ -116,7 +128,10 @@ function render(){
   document.querySelectorAll('#p-streets li').forEach((li,i)=>li.className=i===ui.street?'on fr-gold':i<ui.street?'done fr-inset':'fr-inset');
   // 내 족보 + 그 카드 강조
   const vis=h.board.slice(0,ui.shownBoard),mi=bestInfo([...h.hole[0],...vis]);
-  $('myHand').textContent=(ui.dealt?'내 패: '+mi.name:'');$('myHand').hidden=!ui.dealt;
+  if(ui.aiShown&&ui.eqAt!==ui.shownBoard){ui.eq=runEq(vis);ui.eqAt=ui.shownBoard}
+  const eqs=p=>ui.aiShown&&ui.eq?` · 승률 ${Math.round(ui.eq[p]*100)}%`:'';
+  $('myHand').textContent=(ui.dealt?'내 패: '+mi.name+eqs(0):'');$('myHand').hidden=!ui.dealt;
+  if(ui.aiShown){$('aiHand').textContent='AI 패: '+bestInfo([...h.hole[1],...vis]).name+eqs(1);$('aiHand').hidden=false}
   let use=ui.dealt?mi.use:[];
   if(ui.sd){use=h.winner===0?ui.sd.me.use:h.winner===1?ui.sd.ai.use:[...ui.sd.me.use,...ui.sd.ai.use]}
   const U=new Set(use.map(String));
@@ -222,16 +237,25 @@ async function revealBoard(target){
     await Promise.all([...Array(k)].map((_,j)=>(async()=>{const el=slots.board[from+j],c=h.board[from+j];await dealTo(el,c,false,j*150);await flip(el,c)})()));
     if(t!==tok)return;
     ui.shownBoard=from+k;render();
-    if(ui.shownBoard<target)await wait(h.done?900:300);
+    if(ui.shownBoard<target)await wait(h.done?(ui.allin?1300:900):300);
   }
 }
 async function finishHand(){
   const t=tok;ui.busy=true;
   const sd=h.folded<0;
   if(sd){
-    await revealBoard(5);if(t!==tok)return;
-    ui.street=4;ui.said=[null,null];render();await wait(350);
-    await flip(slots.ai[0],h.hole[1][0]);await flip(slots.ai[1],h.hole[1][1]);if(t!==tok)return;
+    ui.said=[null,null];
+    if(ui.shownBoard<5){ // 올인: 양쪽 패를 먼저 공개하고 남은 카드를 한 장씩 돌림
+      ui.allin=true;render();
+      FX.banner('카드 공개!',{frame:'orange',sub:'남은 카드를 돌려요',dur:1100});
+      await wait(400);await flip(slots.ai[0],h.hole[1][0]);await flip(slots.ai[1],h.hole[1][1]);if(t!==tok)return;
+      ui.aiShown=true;render();await wait(1400);if(t!==tok)return;
+      await revealBoard(5);if(t!==tok)return;
+      ui.street=4;render();await wait(600);
+    }else{
+      ui.street=4;render();await wait(350);
+      await flip(slots.ai[0],h.hole[1][0]);await flip(slots.ai[1],h.hole[1][1]);if(t!==tok)return;
+    }
     ui.sd={me:bestInfo([...h.hole[0],...h.board]),ai:bestInfo([...h.hole[1],...h.board])};
     $('aiHand').textContent='AI 패: '+ui.sd.ai.name;$('aiHand').hidden=false;
     render();await wait(800);if(t!==tok)return;

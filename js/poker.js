@@ -25,10 +25,18 @@ async function dealTo(el,c,face,delay){
   const d=$('deck').getBoundingClientRect(),r=el.getBoundingClientRect();
   await el.animate([{transform:`translate(${d.left-r.left}px,${d.top-r.top}px)`},{transform:'none'}],{duration:FX.reduce?1:300,easing:'cubic-bezier(.2,.8,.3,1)'}).finished;
 }
-async function flip(el,c){
-  if(FX.visible(el))await el.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:110,easing:'steps(4,end)'}).finished;
-  setCard(el,c,true);SFX.play('card');
-  if(FX.visible(el))await el.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:110,easing:'steps(4,end)'}).finished;
+async function flip(el,c,slow){
+  const D=slow?420:110,S=slow?8:4;
+  if(FX.visible(el))await el.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:D,easing:`steps(${S},end)`}).finished;
+  setCard(el,c,true);SFX.play(slow?'reveal':'card');
+  if(FX.visible(el))await el.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:D,easing:`steps(${S},end)`}).finished;
+}
+// 올인 리버: 뒷면으로 깔고 심장 소리를 점점 빠르게 낸 뒤 천천히 뒤집기
+async function suspense(el,c){
+  const t=tok;ui.suspense=true;render();
+  for(const gap of [650,520,400,300,240]){SFX.play('beat');FX.jolt(el);await wait(gap);if(t!==tok)return}
+  await flip(el,c,true);ui.suspense=false;
+  if(FX.visible(el)){const r=FX.centerOf(el);FX.burst(r.x,r.y,{n:18,colors:['#ffffff','#f5b143'],speed:3})}
 }
 // 올인 후 양쪽 패가 공개됐을 때 승률: 남은 카드가 2장 이하면 전부 세고, 더 많으면 무작위로 3000번 깔아 봄
 function runEq(vis){
@@ -40,6 +48,15 @@ function runEq(vis){
   else if(need===2){for(let i=0;i<deck.length;i++)for(let j=i+1;j<deck.length;j++)score([...vis,deck[i],deck[j]])}
   else for(let k=0;k<3000;k++){const d=deck.slice(),bd=vis.slice();for(let m=0;m<need;m++){const r=m+Math.floor(Math.random()*(d.length-m));[d[m],d[r]]=[d[r],d[m]];bd.push(d[m])}score(bd)}
   return [w[0]/n,w[1]/n];
+}
+// 아웃츠: 지고 있는 쪽이 다음 카드 한 장으로 앞서게 되는 카드 목록 (플랍 이후, 남은 카드가 있을 때만)
+function outsOf(vis,eq){
+  if(vis.length<3||vis.length>=5||Math.abs(eq[0]-eq[1])<1e-9)return null;
+  const trail=eq[0]<eq[1]?0:1,used=new Set([...h.hole[0],...h.hole[1],...vis]),cards=[];
+  for(let c=0;c<52;c++){if(used.has(c))continue;const bd=[...vis,c];
+    const a=PK.evalHand([...h.hole[trail],...bd]),b=PK.evalHand([...h.hole[1-trail],...bd]);if(a>b)cards.push(c)}
+  cards.sort((x,y)=>(y>>2)-(x>>2)||(x&3)-(y&3));
+  return {p:trail,cards,river:vis.length===4};
 }
 // 지금 가진 카드로 만든 족보와, 그 족보를 만드는 카드
 function bestInfo(cards){
@@ -84,7 +101,10 @@ const lastOpp=()=>{for(let i=h.log.length-1;i>=0;i--)if(h.log[i].p===1)return h.
 function guide(){
   const g=$('guide'),tag=t=>`<span class="gtag">${t}</span> `;
   if(ui.result){g.className='guide fr-dark '+ui.resClass;g.innerHTML=tag('결과')+ui.result;return}
-  if(ui.allin){g.className='guide fr-dark';g.innerHTML=tag('올인')+'<b>둘 다 올인! 카드를 공개하고 남은 카드를 돌려요</b><small>이름 아래 승률은 남은 카드가 어떻게 나올 수 있는지 다 따져 본 확률이에요</small>';return}
+  if(ui.allin){g.className='guide fr-dark';
+    const o=ui.outs,who=o&&(o.p?'AI':'나'),names=o&&o.cards.slice(0,14).map(c=>rl(c>>2)+SUITCH[c&3]).join(' ')+(o.cards.length>14?' …':'');
+    const outLine=!o?'':o.cards.length?`<small>${who}는 ${o.river?'리버에 이 카드가 나오면 역전':'다음 카드가 이 중 하나면 앞서요'} (${o.cards.length}장): <em>${names}</em></small>`:`<small>${who}는 다음 카드로 역전할 카드가 없어요</small>`;
+    g.innerHTML=tag('올인')+(ui.suspense?'<b>마지막 카드…!</b>':'<b>둘 다 올인! 카드를 공개하고 남은 카드를 돌려요</b>')+(outLine||'<small>이름 아래 승률은 남은 카드가 어떻게 나올 수 있는지 다 따져 본 확률이에요</small>');return}
   if(ui.thinking){g.className='guide fr-dark';g.innerHTML=tag('AI 차례')+'<b>AI가 고민 중이에요…</b><small>AI의 말풍선에 무엇을 했는지 나와요</small>';return}
   const myTurn=!ui.busy&&!h.done&&h.toAct===0;
   if(!myTurn){g.className='guide fr-dark';g.innerHTML=tag('진행 중')+'<b>카드를 나누는 중…</b>';return}
@@ -128,8 +148,8 @@ function render(){
   document.querySelectorAll('#p-streets li').forEach((li,i)=>li.className=i===ui.street?'on fr-gold':i<ui.street?'done fr-inset':'fr-inset');
   // 내 족보 + 그 카드 강조
   const vis=h.board.slice(0,ui.shownBoard),mi=bestInfo([...h.hole[0],...vis]);
-  if(ui.aiShown&&ui.eqAt!==ui.shownBoard){ui.eq=runEq(vis);ui.eqAt=ui.shownBoard}
-  const eqs=p=>ui.aiShown&&ui.eq?` · 승률 ${Math.round(ui.eq[p]*100)}%`:'';
+  if(ui.aiShown&&ui.eqAt!==ui.shownBoard){ui.eq=runEq(vis);ui.outs=outsOf(vis,ui.eq);ui.eqAt=ui.shownBoard}
+  const eqs=p=>ui.aiShown&&ui.eq?` · 승률 ${Math.round(ui.eq[p]*100)}%`+(ui.outs&&ui.outs.p===p?(ui.outs.cards.length?` · 역전 ${ui.outs.cards.length}장`:' · 역전 불가'):''):'';
   $('myHand').textContent=(ui.dealt?'내 패: '+mi.name+eqs(0):'');$('myHand').hidden=!ui.dealt;
   if(ui.aiShown){$('aiHand').textContent='AI 패: '+bestInfo([...h.hole[1],...vis]).name+eqs(1);$('aiHand').hidden=false}
   let use=ui.dealt?mi.use:[];
@@ -234,7 +254,7 @@ async function revealBoard(target){
   while(ui.shownBoard<target){
     const from=ui.shownBoard,k=from===0?3:1;
     ui.street=from===0?1:from===3?2:3;render();
-    await Promise.all([...Array(k)].map((_,j)=>(async()=>{const el=slots.board[from+j],c=h.board[from+j];await dealTo(el,c,false,j*150);await flip(el,c)})()));
+    await Promise.all([...Array(k)].map((_,j)=>(async()=>{const el=slots.board[from+j],c=h.board[from+j];await dealTo(el,c,false,j*150);if(ui.allin&&from+j===4&&!(ui.outs&&ui.outs.river&&!ui.outs.cards.length))await suspense(el,c);else await flip(el,c)})()));
     if(t!==tok)return;
     ui.shownBoard=from+k;render();
     if(ui.shownBoard<target)await wait(h.done?(ui.allin?1300:900):300);

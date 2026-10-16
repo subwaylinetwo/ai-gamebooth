@@ -20,7 +20,8 @@ const SFX=(()=>{
     chip:()=>tone(1900,.035,{vol:.03,type:'triangle',to:2600}),card:()=>noise(.045,{vol:.06,hp:3200}),
     check:()=>{tone(300,.04,{vol:.08,type:'triangle'});tone(300,.04,{vol:.08,type:'triangle',at:.09})},
     fold:()=>tone(330,.2,{type:'triangle',to:170,vol:.08}),raise:()=>seq([440,660],.06),allin:()=>seq([330,440,554,660,880],.06,{vol:.07}),
-    turn:()=>tone(988,.08,{vol:.04}),win:()=>seq([523,659,784,1046,784,1046],.1),lose:()=>seq([392,330,262,196],.14,{type:'triangle',vol:.1}),
+    turn:()=>tone(988,.08,{vol:.04}),beat:()=>{tone(72,.1,{type:'triangle',vol:.24});tone(62,.1,{type:'triangle',vol:.2,at:.14})},
+    reveal:()=>{noise(.09,{vol:.1,hp:2400});seq([523,784],.07,{vol:.06})},win:()=>seq([523,659,784,1046,784,1046],.1),lose:()=>seq([392,330,262,196],.14,{type:'triangle',vol:.1}),
   };
   addEventListener('pointerdown',()=>{if(on)ctx()},{once:true});
   return {play:n=>{if(on&&S[n])try{S[n]()}catch(e){}},get on(){return on},toggle(){on=!on;try{localStorage.setItem('sfx',on?'on':'off')}catch(e){}return on}};

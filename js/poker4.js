@@ -184,12 +184,20 @@ async function startHand(){
   h=PM.newHand(stacks,btn,rng);
   const alive=[...Array(N).keys()].filter(i=>!h.out[i]);
   for(const i of alive)if(ais[i])ais[i].newHand(h.hole[i],alive.filter(j=>j!==i));
-  ui={stack:h.stacks.slice(),bets:h.si.slice(),pot:0,street:0,shownBoard:0,busy:true,thinking:-1,said:Array(N).fill(null),result:null,resClass:'',dealt:false,shown:null,eq:null,eqAt:-1,winUse:null,allin:false};
+  ui={stack:stacks.slice(),bets:Array(N).fill(0),pot:0,street:0,shownBoard:0,busy:true,thinking:-1,said:Array(N).fill(null),result:null,resClass:'',dealt:false,shown:null,eq:null,eqAt:-1,winUse:null,allin:false};
   cards.flat().forEach(el=>setCard(el,null,false,'none'));boardEl.forEach(el=>setCard(el,null));
   $('nextRow').hidden=true;[1,2,3].forEach(i=>mood(i,'idle'));
-  render();SFX.play('chip');
+  render();
   if(handNo===0&&window.fitP)fitP();
-  await wait(250);if(t!==tok)return;
+  // 블라인드: 칩이 각자 자리에서 베팅 자리로 날아감
+  await wait(200);if(t!==tok)return;
+  for(const [p,lbl] of [[h.sb,'스몰 블라인드'],[h.bb,'빅 블라인드']]){
+    const amt=h.si[p],from=stackAnchor(p);if(!amt)continue;
+    if(FX.visible(from)){const c=FX.centerOf(from);FX.float(c.x,c.y+(p?18:-12)*(window.PX||2),`${lbl} ${amt}`,p?'red':'blue')}
+    ui.stack[p]-=amt;render();
+    await FX.fly(from,betEl(p),Math.min(3,chipsFor(amt)),{src:p?SPR.chipRed:SPR.chipBlue});if(t!==tok)return;
+    ui.bets[p]=amt;render();await wait(150);if(t!==tok)return;
+  }
   // 스몰 블라인드부터 한 장씩 두 바퀴
   const order=[];for(let r=0;r<2;r++)for(let k=0;k<N;k++){const i=(h.sb+k)%N;if(!h.out[i])order.push([cards[i][r],h.hole[i][r],i===0])}
   await Promise.all(order.map(([el,c,f],j)=>dealTo(el,c,f,j*110)));

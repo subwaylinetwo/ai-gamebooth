@@ -189,12 +189,20 @@ function newMatch(){
 async function startHand(){
   const t=tok;
   h=PK.newHand(stacks,btn,rng);ai.newHand(h.hole[1]);
-  ui={stack:h.stacks.slice(),bets:h.si.slice(),pot:0,street:0,shownBoard:0,busy:true,thinking:false,said:[null,null],result:null,resClass:'',sd:null,dealt:false};
+  ui={stack:stacks.slice(),bets:[0,0],pot:0,street:0,shownBoard:0,busy:true,thinking:false,said:[null,null],result:null,resClass:'',sd:null,dealt:false};
   [...slots.me,...slots.ai].forEach(el=>setCard(el,null,false,'none'));
   slots.board.forEach(el=>setCard(el,null));
   $('aiHand').hidden=true;$('nextRow').hidden=true;mood('idle');
-  render();SFX.play('chip');
-  await wait(250);if(t!==tok)return;
+  render();
+  // 블라인드: 칩이 각자 자리에서 베팅 자리로 날아감
+  await wait(200);if(t!==tok)return;
+  for(const [p,lbl] of [[h.btn,'스몰 블라인드'],[1-h.btn,'빅 블라인드']]){
+    const amt=h.si[p],from=$(p?'aiHP':'myHP');if(!amt)continue;
+    if(FX.visible(from)){const c=FX.centerOf(from);FX.float(c.x,c.y-12*(window.PX||2),`${lbl} ${amt}`,p?'red':'blue')}
+    ui.stack[p]-=amt;render();
+    await FX.fly(from,$(p?'aiBet':'myBet'),Math.min(3,chipsFor(amt)),{src:p?SPR.chipRed:SPR.chipBlue});if(t!==tok)return;
+    ui.bets[p]=amt;render();await wait(150);if(t!==tok)return;
+  }
   const order=[[slots.me[0],h.hole[0][0],true],[slots.ai[0],h.hole[1][0],false],[slots.me[1],h.hole[0][1],true],[slots.ai[1],h.hole[1][1],false]];
   await Promise.all(order.map(([el,c,f],i)=>dealTo(el,c,f,i*150)));
   if(t!==tok)return;

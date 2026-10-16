@@ -277,17 +277,19 @@ async function finishHand(){
     ui.noEq=true;render();await wait(700);if(t!==tok)return;
   }
   // 결과 정리
-  const main=h.pots[0],delta=h.stacks[0]-before[0];
+  const real=h.pots.filter(pt=>!pt.ret&&pt.amt>0),main=real[0]||h.pots[0],delta=h.stacks[0]-before[0];
   const nameOfHand=i=>h.sd?bestInfo([...h.hole[i],...h.board]).name:'';
-  const potLines=h.pots.map((pt,k)=>`${h.pots.length>1?(k===0?'메인 팟':'사이드 팟')+' ':''}${pt.amt}칩 → ${pt.win.map(i=>`<em${i?' class="ai"':''}>${NAMES[i]}</em>`).join('·')}${h.sd?' ('+nameOfHand(pt.win[0])+')':' (다른 사람이 모두 폴드)'}`);
+  const potLines=real.map((pt,k)=>`${real.length>1?(k===0?'메인 팟':'사이드 팟')+' ':''}${pt.amt}칩 → ${pt.win.map(i=>`<em${i?' class="ai"':''}>${NAMES[i]}</em>`).join('·')}${pt.win.length>1?' (나눠 가짐)':''}${h.sd?' ('+nameOfHand(pt.win[0])+')':' (다른 사람이 모두 폴드)'}`);
+  const ret=h.pots.filter(pt=>pt.ret&&pt.amt>0);if(ret.length)potLines.push(ret.map(pt=>`${NAMES[pt.win[0]]}가 아무도 안 따라온 ${pt.amt}칩을 돌려받음`).join(' · '));
   if(h.sd)ui.winUse=bestInfo([...h.hole[main.win[0]],...h.board]).use;
   ui.pot=0;render();
-  const iWon=h.payout[0]>0,title=delta>0?`이번 판 +${delta}칩`:delta<0?`이번 판 ${delta}칩`:'이번 판 ±0';
-  FX.banner(iWon?'이겼다!':`${NAMES[main.win[0]]} 승리`,{frame:iWon?'gold':'red',sub:title,dur:1200});
-  SFX.play(iWon?'win':'lose');
+  // 승패는 실제로 칩이 늘었는지로 판단 (돌려받은 칩, 나눠 가진 팟은 승리가 아님)
+  const iWon=delta>0,even=delta===0&&h.payout[0]>0,title=delta>0?`이번 판 +${delta}칩`:delta<0?`이번 판 ${delta}칩`:'이번 판 ±0';
+  FX.banner(iWon?'이겼다!':even?'본전':`${NAMES[main.win[0]]} 승리`,{frame:iWon?'gold':even?'gray':'red',sub:even?'팟을 나눠 가져서 칩 변화 없음':title,dur:1200});
+  SFX.play(iWon?'win':even?'check':'lose');
   // AI 한마디
   for(let i=1;i<N;i++){if(h.out[i])continue;const d=h.stacks[i]-before[i];
-    if(h.payout[i]>0){ui.said[i]={txt:one(TAUNT[KEYS[i]].win),cls:'taunt'};mood(i,'happy')}
+    if(h.stacks[i]-before[i]>0){ui.said[i]={txt:one(TAUNT[KEYS[i]].win),cls:'taunt'};mood(i,'happy')}
     else if(d<=-200){ui.said[i]={txt:one(TAUNT[KEYS[i]].lose),cls:'taunt'};mood(i,'sad')}}
   render();
   await Promise.all(h.pots.flatMap(pt=>pt.win.map(w=>FX.fly($('potZone'),stackAnchor(w),Math.min(6,chipsFor(pt.amt/pt.win.length)+1)))));

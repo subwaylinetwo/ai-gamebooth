@@ -58,7 +58,10 @@ function afterAction(h,p){
 }
 function finish(h){
   const L=live(h),n=h.n;h.payout=Array(n).fill(0);h.pots=[];
-  if(L.length===1){h.payout[L[0]]=pot(h);h.pots.push({amt:pot(h),win:[L[0]]});h.sd=false}
+  if(L.length===1){
+    // 아무도 따라오지 않은 내 베팅은 돌려받는 것, 나머지만 실제로 딴 팟
+    const w=L[0],others=Math.max(0,...h.inv.filter((_,i)=>i!==w)),back=Math.max(0,h.inv[w]-others);
+    h.payout[w]=pot(h);h.pots.push({amt:pot(h)-back,win:[w]});if(back)h.pots.push({amt:back,win:[w],ret:true});h.sd=false}
   else{
     h.sd=true;h.vals=Array(n).fill(-1);for(const i of L)h.vals[i]=PK.evalHand([...h.hole[i],...h.board]);
     const levels=[...new Set(h.inv.filter(x=>x>0))].sort((a,b)=>a-b);let prev=0;
@@ -71,9 +74,13 @@ function finish(h){
       const order=[];for(let k=1;k<=n;k++){const j=(h.btn+k)%n;if(win.includes(j))order.push(j)}
       const share=Math.floor(amt/win.length);let rem=amt-share*win.length;
       for(const w of order){h.payout[w]+=share+(rem>0?1:0);if(rem>0)rem--}
-      if(amt>0)h.pots.push({amt,win:order});prev=lv;
+      // 이 층에 한 사람만 칩을 냈으면 팟이 아니라 '아무도 못 받은 내 칩을 돌려받는 것'
+      const contrib=[...Array(n).keys()].filter(i=>h.inv[i]>prev).length;
+      if(amt>0)h.pots.push({amt,win:order,ret:contrib===1});prev=lv;
     }
   }
+  // 이기는 사람이 같은 팟은 하나로 합쳐서 보여줌
+  const merged=[];for(const pt of h.pots){const l=merged[merged.length-1];if(l&&!!l.ret===!!pt.ret&&l.win.join()===pt.win.join())l.amt+=pt.amt;else merged.push({...pt})}h.pots=merged;
   for(let i=0;i<n;i++)h.stacks[i]+=h.payout[i];
   h.done=true;
 }

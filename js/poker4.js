@@ -293,8 +293,12 @@ async function finishHand(){
   if(h.sd)ui.winUse=bestInfo([...h.hole[main.win[0]],...h.board]).use;
   ui.pot=0;render();
   // 승패는 실제로 칩이 늘었는지로 판단 (돌려받은 칩, 나눠 가진 팟은 승리가 아님)
-  const iWon=delta>0,even=delta===0&&h.payout[0]>0,title=delta>0?`이번 판 +${delta}칩`:delta<0?`이번 판 ${delta}칩`:'이번 판 ±0';
-  FX.banner(iWon?'이겼다!':even?'본전':`${NAMES[main.win[0]]} 승리`,{frame:iWon?'gold':even?'gray':'red',sub:even?'팟을 나눠 가져서 칩 변화 없음':title,dur:1200});
+  // 숫자는 누구 것인지 이름을 붙여서 표시 (이긴 사람은 번 칩, 나는 내 칩 변화)
+  const sgn=x=>x>0?`+${x}`:x<0?`${x}`:'±0';
+  const iWon=delta>0,even=delta===0&&h.payout[0]>0,title=`내 칩 ${sgn(delta)}`;
+  const top=[...Array(N).keys()].reduce((a,i)=>h.stacks[i]-before[i]>h.stacks[a]-before[a]?i:a,0),topGain=h.stacks[top]-before[top];
+  const sub=iWon?`내 칩 ${sgn(delta)}`:even?'팟을 나눠 가져서 내 칩 변화 없음':`${NAMES[top]} ${sgn(topGain)}칩 · 나 ${sgn(delta)}칩`;
+  FX.banner(iWon?'이겼다!':even?'본전':`${NAMES[top]} 승리`,{frame:iWon?'gold':even?'gray':'red',sub,dur:1300});
   SFX.play(iWon?'win':even?'check':'lose');
   // AI 한마디
   for(let i=1;i<N;i++){if(h.out[i])continue;const d=h.stacks[i]-before[i];
@@ -320,7 +324,7 @@ async function finishHand(){
     setTimeout(()=>{if(t!==tok)return;FX.banner(my===1?'1등!':`${my}등`,{frame:my===1?'gold':my===4?'red':'gray',sub:`내 칩 ${stacks[0]}`,dur:2200});if(my===1)FX.confetti();SFX.play(my===1?'win':'lose')},700);
     $('bNext').textContent='새 게임';
   }else{
-    ui.result=`<b>${title}</b><small>${potLines.join(' · ')}</small>`;ui.resClass=delta>0?'win':delta<0?'lose':'';
+    ui.result=`<b>${iWon?'이번 판 승리! ':even?'본전 · ':`${NAMES[top]} 승리 · `}${title}칩</b><small>${potLines.join(' · ')}</small>`;ui.resClass=delta>0?'win':delta<0?'lose':'';
     $('bNext').textContent='다음 핸드';
   }
   $('nextRow').hidden=false;render();

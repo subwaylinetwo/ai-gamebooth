@@ -15,16 +15,31 @@ const Rec=(()=>{
   const sb=configured&&window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
   const badge=(ok,text)=>{document.getElementById('saveBadge').classList.toggle('ok',ok);document.getElementById('saveText').textContent=text};
   badge(!!sb,sb?'기록 자동 저장':configured?'저장 라이브러리를 불러오지 못했어요':'Supabase 설정 전이라 기록이 저장되지 않아요');
-  async function save(rec,retry){
-    if(!sb)return;
-    const {game,mode,human,ai,win,...detail}=rec;
-    const len=game==='yacht'?12:(detail.hands||[]).length;
-    const {error}=await sb.from('plays').insert({game,mode,human,ai,win,len,detail:{...detail,device:DEVICE_ID}});
-    if(!error){toast('기록 저장됨');Records.refresh();return}
-    if(!retry){setTimeout(()=>save(rec,true),800+Math.random()*800);return}
-    toast('기록을 저장하지 못했어요. 인터넷 연결을 확인해 주세요');
+  // 저장 실패한 기록은 이 기기에 보관했다가, 다음 접속이나 다음 저장 때 다시 보냄
+  const QK='pendingPlays';
+  const loadQ=()=>{try{return JSON.parse(localStorage.getItem(QK)||'[]')}catch(e){return []}};
+  const saveQ=q=>{try{localStorage.setItem(QK,JSON.stringify(q.slice(-200)))}catch(e){}};
+  const rowOf=rec=>{const {game,mode,human,ai,win,...detail}=rec;
+    return {game,mode,human,ai,win,len:game==='yacht'?12:(detail.hands||[]).length,detail:{...detail,device:DEVICE_ID}}};
+  const insert=async row=>{const {error}=await sb.from('plays').insert(row);if(error)console.warn('기록 저장 실패',error.message);return !error};
+  let flushing=false;
+  async function flush(){
+    if(!sb||flushing)return;const q=loadQ();if(!q.length)return;flushing=true;
+    const left=[];for(const row of q){if(!(await insert(row)))left.push(row)}
+    saveQ(left);flushing=false;
+    if(left.length<q.length){toast(`보관해 둔 기록 ${q.length-left.length}개를 저장했어요`);Records.refresh()}
   }
-  return {save,sb};
+  async function save(rec){
+    if(!sb)return;
+    const row=rowOf(rec);
+    if(await insert(row)){toast('기록 저장됨');Records.refresh();flush();return}
+    await new Promise(r=>setTimeout(r,800+Math.random()*800));
+    if(await insert(row)){toast('기록 저장됨');Records.refresh();flush();return}
+    const q=loadQ();q.push(row);saveQ(q);
+    toast('지금은 기록을 저장하지 못했어요. 이 기기에 보관했다가 나중에 다시 보낼게요');
+  }
+  setTimeout(flush,1500);
+  return {save,sb,flush};
 })();
 
 // ================================ 기록 화면 ================================

@@ -140,7 +140,8 @@ function render(){
     const n=b>0?chipsFor(b):0,stk=bz.querySelector('.stk');
     if(stk.childElementCount!==n)stk.innerHTML=Array.from({length:n},()=>`<img src="${p?SPR.chipRed:SPR.chipBlue}" alt="">`).join('');
   }
-  $('pot').textContent=Math.round(ui.pot*10)/10;
+  // 팟 숫자 = 가운데 모인 칩 + 각자 앞에 놓인 이번 라운드 베팅(블라인드 포함)
+  $('pot').textContent=Math.round((ui.pot+ui.bets[0]+ui.bets[1])*10)/10;
   $('aiSeat').classList.toggle('active',!!ui.thinking);FX.setFrame($('aiSeat'),ui.thinking?'insetgold':'inset');
   $('mySeat').classList.toggle('active',myTurn);FX.setFrame($('mySeat'),myTurn?'insetgold':'inset');
   setBubble($('aiSay'),ui.thinking?{txt:'생각 중',cls:'think'}:ui.said[1]);

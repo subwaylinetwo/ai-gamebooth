@@ -142,7 +142,8 @@ function render(){
     setBubble($('say'+i),ui.thinking===i?{txt:'생각 중',cls:'think'}:ui.said[i]||handB);
     if(i===0){const mi=ui.dealt&&!h.out[0]?bestInfo([...h.hole[0],...vis]):null;$('hand0').textContent=mi?'내 패: '+mi.name+eqs:''}
   }
-  $('pot').textContent=ui.pot;
+  // 팟 숫자 = 가운데 모인 칩 + 각자 앞에 놓인 이번 라운드 베팅(블라인드 포함)
+  $('pot').textContent=ui.pot+ui.bets.reduce((a,b)=>a+b,0);
   document.querySelectorAll('#q-streets li').forEach((li,i)=>li.className=i===ui.street?'on fr-gold':i<ui.street?'done fr-inset':'fr-inset');
   // 강조: 진행 중엔 내 족보, 끝나면 이긴 사람 족보
   let use=[];

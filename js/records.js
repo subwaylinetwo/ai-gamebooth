@@ -46,9 +46,9 @@ const Rec=(()=>{
 const Records={
   async refresh(){
     if(!Rec.sb)return;
-    const {data,error}=await Rec.sb.from('plays').select('created_at,game,mode,human,ai,win,len,rank:detail->>rank').order('created_at',{ascending:false}).limit(500);
+    const {data,error}=await Rec.sb.from('plays').select('created_at,game,mode,human,ai,win,len,rank:detail->>rank,test:detail->>test').order('created_at',{ascending:false}).limit(500);
     if(error){toast('기록을 불러오지 못했어요');return}
-    this.render(data.map(r=>({ts:Date.parse(r.created_at),game:r.game,mode:r.mode,human:r.human,ai:r.ai,win:r.win,len:r.len,rank:r.rank})));
+    this.render(data.filter(r=>r.test!=='true').map(r=>({ts:Date.parse(r.created_at),game:r.game,mode:r.mode,human:r.human,ai:r.ai,win:r.win,len:r.len,rank:r.rank})));
   },
   render(list){
     const tiles=document.getElementById('r-tiles'),rows=document.getElementById('r-rows');

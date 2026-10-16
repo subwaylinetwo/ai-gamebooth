@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI를 이겨라</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+<script src="js/fit.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas><div id="fxl" aria-hidden="true"></div><div id="crt" aria-hidden="true"></div>
+<div class="shell">
+<header class="mast">
+  <div class="logo fr-red" title="야추와 포커로 AI와 1대1"><img id="brandDie" class="ava" alt=""><h1>AI를 이겨라</h1></div>
+  <nav class="nav" aria-label="게임 선택">
+    <button class="btn fr-orange on" data-g="yacht">야추</button>
+    <button class="btn fr-dark" data-g="poker">포커</button>
+    <button class="btn fr-dark" data-g="rules">규칙</button>
+    <button class="btn fr-dark" data-g="records">기록</button>
+  </nav>
+  <div class="subbar">
+    <span class="save-badge" id="saveBadge"><i class="dot"></i><span id="saveText">기록 저장 확인 중…</span></span>
+    <button class="btn sm fr-gray" id="sfxBtn">소리 켬</button>
+  </div>
+</header>
+
+<section class="game on" id="yacht"><div class="ylay">
+  <div class="ycol">
+    <div class="vs">
+      <div class="vs-side me fr-blue" id="y-meSide"><img class="ava" id="y-meAva" alt=""><div><small>나 <span class="turn">차례</span></small><span class="t14" id="y-meScore">0</span></div></div>
+      <div class="vs-mid">
+        <div class="round t11" id="y-round">1라운드 / 12</div>
+        <div class="modes" role="tablist" aria-label="AI 모드">
+          <button class="btn sm fr-orange tab on" data-mode="ev">최적 AI</button>
+          <button class="btn sm fr-dark tab" data-mode="win">상대 고려 AI</button>
+        </div>
+      </div>
+      <div class="vs-side ai fr-red" id="y-aiSide"><div><small><span class="turn">차례</span> AI</small><span class="t14" id="y-aiScore">0</span></div><img class="ava" id="y-aiSideAva" alt=""></div>
+    </div>
+    <div class="ypanel fr-panel">
+      <div class="ailine"><img class="ava" id="y-aiAva" alt="AI"><div class="col"><div class="bubble fr-white" id="y-say" aria-live="polite"></div><p class="note" id="y-aiInfo"></p></div></div>
+      <div class="tray fr-inset" id="y-tray"><div class="status" id="y-status"></div><div class="dice" id="y-dice"></div></div>
+      <div class="rollrow">
+        <button class="btn big fr-blue" id="y-rollBtn">굴리기</button>
+        <div class="counter fr-dark"><small>남은 굴리기</small><span class="t14" id="y-rolls">3</span></div>
+      </div>
+      <p class="hint">주사위를 누르면 고정돼요 · 점수표의 파란 숫자를 눌러 기록</p>
+      <p class="note ctr" id="y-load"></p>
+      <div id="y-over" hidden></div>
+    </div>
+  </div>
+  <div class="scorecard fr-panel"><table id="y-board"></table></div>
+</div></section>
+
+<section class="game" id="poker"><div class="play">
+  <div class="pleft">
+  <div class="ptable fr-felt" id="p-table">
+    <div class="seat fr-inset ai" id="p-aiSeat">
+      <img class="ava" id="p-aiAva" alt="AI">
+      <div class="sinfo">
+        <div class="sname"><span class="t11">AI</span><span class="dbadge" id="p-aiD">D</span><span class="turnflag">생각 중</span></div>
+        <div class="hp" id="p-aiHP"><i id="p-aiHPbar"></i></div>
+        <div class="snum"><span class="t11" id="p-aiStack">1000</span> 칩 남음</div>
+        <div class="handpill" id="p-aiHand" hidden></div>
+      </div>
+      <div class="hole"><div class="pc none" id="p-ai0"></div><div class="pc none" id="p-ai1"></div></div>
+      <div class="bubble fr-white" id="p-aiSay" aria-live="polite"></div>
+    </div>
+    <div class="center">
+      <div class="pc deck" id="p-deck"></div>
+      <div class="board"><div class="pc" id="p-b0"></div><div class="pc" id="p-b1"></div><div class="pc" id="p-b2"></div><div class="pc" id="p-b3"></div><div class="pc" id="p-b4"></div></div>
+      <div class="potrow">
+        <div class="betzone ai" id="p-aiBet"><span class="stk"></span><span class="lbl fr-dark">AI 베팅 <span class="amt t11">0</span></span></div>
+        <div class="potzone fr-dark" id="p-potZone"><img id="p-potChip" alt=""><span class="pl">팟</span><span class="t14" id="p-pot">0</span></div>
+        <div class="betzone me" id="p-myBet"><span class="lbl fr-dark">내 베팅 <span class="amt t11">0</span></span><span class="stk"></span></div>
+      </div>
+    </div>
+    <div class="seat fr-inset me" id="p-mySeat">
+      <img class="ava" id="p-myAva" alt="나">
+      <div class="sinfo">
+        <div class="sname"><span class="t11">나</span><span class="dbadge" id="p-myD">D</span><span class="turnflag">내 차례</span></div>
+        <div class="hp" id="p-myHP"><i id="p-myHPbar"></i></div>
+        <div class="snum"><span class="t11" id="p-myStack">1000</span> 칩 남음</div>
+        <div class="handpill" id="p-myHand"></div>
+      </div>
+      <div class="hole"><div class="pc none" id="p-me0"></div><div class="pc none" id="p-me1"></div></div>
+      <div class="bubble fr-white" id="p-mySay"></div>
+    </div>
+  </div>
+  </div>
+  <div class="pside">
+    <div class="ptop">
+      <span class="t11">포커</span><span id="p-handInfo"></span><span>· 블라인드 10/20</span>
+      <select id="p-aiSel" class="fr-dark" aria-label="AI 종류"><option value="basic">기본 AI</option><option value="learn">학습형 AI</option></select>
+      <select id="p-lenSel" class="fr-dark" aria-label="게임 길이"><option value="10">10핸드</option><option value="20">20핸드</option><option value="999">파산할 때까지</option></select>
+    </div>
+    <ol class="streets" id="p-streets" aria-label="진행 단계"><li class="fr-inset">프리플랍</li><li class="fr-inset">플랍</li><li class="fr-inset">턴</li><li class="fr-inset">리버</li><li class="fr-inset">쇼다운</li></ol>
+    <div class="guide fr-dark" id="p-guide" aria-live="polite"></div>
+    <div class="ctrl fr-panel" id="p-ctrl">
+      <div class="nextrow" id="p-nextRow" hidden><button class="btn big fr-green" id="p-bNext">다음 핸드</button></div>
+      <div class="acts">
+        <button class="btn fr-red" id="p-bFold">폴드</button>
+        <button class="btn fr-blue" id="p-bCall">체크</button>
+        <button class="btn fr-orange" id="p-bRaise">레이즈</button>
+      </div>
+      <div class="slider"><input type="range" id="p-raiseRange" aria-label="레이즈 금액"><span id="p-raiseVal"></span></div>
+      <div class="quick" id="p-quick">
+        <button class="btn sm fr-gray" data-f="0.5">½ 팟</button>
+        <button class="btn sm fr-gray" data-f="1">팟</button>
+        <button class="btn sm fr-gray" data-f="all">올인</button>
+      </div>
+      <p class="note" id="p-load"></p>
+    </div>
+    <div class="hist fr-inset"><div class="t11">이번 핸드 기록</div><div id="p-hist"></div><div id="p-aiRead"></div></div>
+  </div>
+</div></section>
+
+<section class="game" id="rules">
+<div class="page fr-panel">
+  <div class="rtabs" role="tablist" aria-label="규칙 선택">
+    <button class="btn sm fr-orange rtab on" data-r="r-yacht">야추 규칙</button>
+    <button class="btn sm fr-dark rtab" data-r="r-poker">포커 규칙</button>
+  </div>
+  <div class="doc on" id="r-yacht">
+    <h2>야추</h2>
+    <p>주사위 5개로 족보를 만들어 점수표 12칸을 채우는 게임이에요. 12라운드가 끝났을 때 총점이 높은 사람이 이겨요.</p>
+    <h3>한 턴 진행</h3>
+    <ol>
+      <li><em>굴리기</em>를 눌러 주사위 5개를 굴려요.</li>
+      <li>남기고 싶은 주사위를 눌러 <em>고정</em>(노란색 + 자물쇠)하고 나머지를 다시 굴려요. 한 턴에 최대 3번까지 굴릴 수 있어요.</li>
+      <li>점수표의 <em>파란 칸 하나</em>를 골라 기록하면 턴이 끝나요. 칸 안의 숫자가 그 칸에 기록했을 때 받을 점수예요.</li>
+    </ol>
+    <p>매 턴 반드시 한 칸을 채워야 해요. 맞는 족보가 없으면 아무 칸에나 0점으로 기록해야 하고, 한 번 채운 칸은 다시 쓸 수 없어요.</p>
+    <h3>점수표</h3>
+    <div class="tbl"><table>
+      <tr><th>칸</th><th>조건</th><th>점수</th></tr>
+      <tr><td>Aces ~ Sixes</td><td>해당 숫자(1~6)가 나온 주사위</td><td>그 숫자 눈의 합</td></tr>
+      <tr><td>보너스</td><td>Aces~Sixes 합계가 63점 이상</td><td>+35점 (자동)</td></tr>
+      <tr><td>Choice</td><td>조건 없음</td><td>주사위 5개 눈의 합</td></tr>
+      <tr><td>4 of a Kind</td><td>같은 숫자 4개 이상</td><td>주사위 5개 눈의 합</td></tr>
+      <tr><td>Full House</td><td>같은 숫자 3개 + 같은 숫자 2개</td><td>주사위 5개 눈의 합</td></tr>
+      <tr><td>S. Straight</td><td>연속된 숫자 4개</td><td>15점</td></tr>
+      <tr><td>L. Straight</td><td>연속된 숫자 5개</td><td>30점</td></tr>
+      <tr><td>Yacht</td><td>5개 모두 같은 숫자</td><td>50점</td></tr>
+    </table></div>
+    <div class="box fr-inset">보너스 63점은 각 숫자를 3개씩 모았을 때의 합이에요. 숫자당 3개를 기준으로 생각하면 쉬워요. 이 게임에서는 5개가 모두 같은 숫자일 때 Full House로 인정하지 않아요.</div>
+    <h3>AI 모드</h3>
+    <ul>
+      <li><em>최적 AI</em>는 가능한 모든 상황을 미리 계산해서 매 순간 기대 점수가 가장 높은 수를 둬요. 평균 약 192점이에요.</li>
+      <li><em>상대 고려 AI</em>는 같은 계산표를 쓰되 점수 차를 보고, 지고 있으면 모험하고 이기고 있으면 안전하게 둬요.</li>
+      <li>최적 AI도 주사위 운 때문에 완벽한 사람에게 절반은 져요.</li>
+    </ul>
+  </div>
+  <div class="doc" id="r-poker">
+    <h2>포커 · 헤즈업 노리밋 홀덤</h2>
+    <p>AI와 1대1로 하는 텍사스 홀덤이에요. 각자 1,000칩으로 시작하고, 정해진 핸드 수가 끝났을 때 칩이 더 많은 사람이 이겨요. 한 명의 칩이 0이 되면 바로 끝나요.</p>
+    <div class="box fr-inset">처음이라면 카드 아래 <em>안내 상자</em>만 보면서 해도 돼요. AI가 얼마를 걸었는지, 버튼을 누르면 어떻게 되는지 알려줘요. 내 이름 아래에는 지금 내 족보가 나오고, 그 족보를 만드는 카드는 금색 테두리로 올라와요.</div>
+    <h3>한 핸드 진행</h3>
+    <ol>
+      <li><em>블라인드</em>: 딜러(D 표시)가 10칩, 상대가 20칩을 먼저 걸어요. 딜러는 매 핸드 번갈아 바뀌어요.</li>
+      <li><em>프리플랍</em>: 각자 카드 2장을 받고 베팅해요. 이때는 딜러가 먼저 행동해요.</li>
+      <li><em>플랍</em>: 가운데에 공용 카드 3장이 깔리고 베팅해요.</li>
+      <li><em>턴</em>: 공용 카드 1장이 추가되고 베팅해요.</li>
+      <li><em>리버</em>: 마지막 공용 카드 1장이 추가되고 베팅해요. 플랍부터는 딜러가 아닌 사람이 먼저 행동해요.</li>
+      <li><em>쇼다운</em>: 끝까지 남으면 내 카드 2장과 공용 카드 5장 중 가장 좋은 5장으로 승부해요.</li>
+    </ol>
+    <h3>버튼</h3>
+    <div class="tbl"><table>
+      <tr><th>버튼</th><th>뜻</th></tr>
+      <tr><td>체크</td><td>더 걸지 않고 넘김 (상대가 더 건 칩이 없을 때만)</td></tr>
+      <tr><td>콜</td><td>상대가 건 만큼 맞춰서 따라감</td></tr>
+      <tr><td>베팅 / 레이즈</td><td>칩을 더 걸어요. 슬라이더나 ½팟 / 팟 / 올인으로 금액을 정하고 주황 버튼을 눌러요.</td></tr>
+      <tr><td>폴드</td><td>포기. 이번 핸드에 건 칩은 상대가 가져가요.</td></tr>
+    </table></div>
+    <h3>족보 (강한 순서)</h3>
+    <div class="tbl"><table>
+      <tr><th>족보</th><th>예시</th></tr>
+      <tr><td>스트레이트 플러시</td><td>같은 무늬로 연속 5장</td></tr>
+      <tr><td>포카드</td><td>같은 숫자 4장</td></tr>
+      <tr><td>풀하우스</td><td>트리플 + 원페어</td></tr>
+      <tr><td>플러시</td><td>같은 무늬 5장</td></tr>
+      <tr><td>스트레이트</td><td>무늬 상관없이 연속 5장 (A-2-3-4-5도 돼요)</td></tr>
+      <tr><td>트리플</td><td>같은 숫자 3장</td></tr>
+      <tr><td>투페어</td><td>페어 2개</td></tr>
+      <tr><td>원페어</td><td>같은 숫자 2장</td></tr>
+      <tr><td>하이카드</td><td>족보 없음. 가장 높은 카드로 비교해요.</td></tr>
+    </table></div>
+    <div class="box fr-inset">같은 족보끼리는 높은 숫자가 이겨요 (A가 가장 높아요). 무늬에는 높낮이가 없어요. 카드는 무늬마다 색이 달라요: 하트 빨강, 다이아 주황, 스페이드 남색, 클럽 청록.</div>
+    <h3>AI에 대해</h3>
+    <ul>
+      <li>AI는 내가 베팅하는 방식을 보고 내가 어떤 패를 들고 있을지 추측하고, 그 범위를 상대로 자기 승률을 계산해서 행동해요.</li>
+      <li><em>기본 AI</em>는 승률과 팟 오즈로 판단해요. 짧은 게임에서 가장 안정적이에요.</li>
+      <li><em>학습형 AI</em>는 프리플랍을 핸드 레인지 차트대로 치고, 게임 중에 내 성향을 학습해요. 핸드가 끝날 때마다 기록 상자에 AI가 파악한 내 성향이 나와요.</li>
+      <li>가끔 블러프도 해요. 크게 건다고 항상 강한 패는 아니에요.</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<section class="game" id="records">
+<div class="page fr-panel">
+  <h2>플레이 기록</h2>
+  <p>끝까지 마친 게임은 자동으로 저장돼요. 야추는 턴마다 굴린 주사위와 고정한 주사위를, 포커는 핸드마다 모든 행동과 카드를 남겨요.</p>
+  <div class="tiles" id="r-tiles"></div>
+  <div class="tbl"><table>
+    <thead><tr><th>시간</th><th>게임</th><th>AI</th><th>결과</th><th>점수 (나 : AI)</th><th>길이</th></tr></thead>
+    <tbody id="r-rows"><tr><td colspan="6" class="empty">아직 기록이 없어요. 야추 한 판이나 포커 한 게임을 끝내면 여기에 나타나요.</td></tr></tbody>
+  </table></div>
+</div>
+</section>
+</div>
+<div class="toast fr-dark" id="toast" hidden></div>
+<script src="js/records.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/bg.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/yacht-engine.js"></script>
+<script src="js/yacht.js"></script>
+<script src="js/poker-engine.js"></script>
+<script src="js/poker.js"></script>
+<script>fitP();if(document.fonts)document.fonts.ready.then(fitP);</script>
+</body>
+</html>

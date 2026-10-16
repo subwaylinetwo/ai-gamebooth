@@ -6,7 +6,7 @@ function newHand(stacks,btn,rng){
   const n=stacks.length,deck=[...Array(52).keys()];
   for(let i=51;i>0;i--){const j=Math.floor(rng()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
   const h={n,stacks:stacks.slice(),inv:Array(n).fill(0),si:Array(n).fill(0),btn,hole:[],board:[],street:0,
-    out:stacks.map(s=>s<=0),folded:stacks.map(s=>s<=0),acted:Array(n).fill(false),cur:0,lastRaise:BB,raises:0,done:false,log:[]};
+    out:stacks.map(s=>s<=0),folded:stacks.map(s=>s<=0),acted:Array(n).fill(false),lock:Array(n).fill(false),cur:0,lastRaise:BB,raises:0,done:false,log:[]};
   let di=0;for(let i=0;i<n;i++)h.hole[i]=h.out[i]?null:[deck[di++],deck[di++]];
   h.runout=deck.slice(di,di+5);
   const alive=i=>!h.out[i];
@@ -27,7 +27,8 @@ function legal(h){
   const p=h.toAct,toCall=Math.max(0,h.cur-h.si[p]),maxTo=h.si[p]+h.stacks[p];
   const minTo=Math.min(maxTo,h.cur+Math.max(h.lastRaise,BB));
   const others=live(h).filter(i=>i!==p&&h.stacks[i]>0).length;
-  return {toCall:Math.min(toCall,h.stacks[p]),canCheck:toCall===0,canRaise:h.stacks[p]>toCall&&others>0,minTo,maxTo};
+  // 모자란 올인 레이즈 뒤에는, 이미 행동한 사람은 콜/폴드만 가능 (lock)
+  return {toCall:Math.min(toCall,h.stacks[p]),canCheck:toCall===0,canRaise:h.stacks[p]>toCall&&others>0&&!h.lock[p],minTo,maxTo};
 }
 function act(h,a){
   const p=h.toAct,L=legal(h);
@@ -39,8 +40,10 @@ function act(h,a){
   h.log.push({p,street:h.street,t:a.t,to,allin:a.t==='raise'?to>=L.maxTo:(a.t==='call'&&L.toCall>=h.stacks[p]),potBefore:pot(h),toCall:L.toCall,cur:h.cur});
   if(a.t==='fold'){h.folded[p]=true}
   else if(a.t==='call'||a.t==='check'){put(h,p,L.toCall);h.acted[p]=true}
-  else{const inc=to-h.cur;if(inc>=h.lastRaise)h.lastRaise=inc;put(h,p,to-h.si[p]);h.cur=Math.max(h.cur,h.si[p]);h.raises++;
-    for(let i=0;i<h.n;i++)h.acted[i]=false;h.acted[p]=true}
+  else{const inc=to-h.cur,full=inc>=h.lastRaise;put(h,p,to-h.si[p]);h.cur=Math.max(h.cur,h.si[p]);h.raises++;
+    if(full){h.lastRaise=inc;for(let i=0;i<h.n;i++){h.acted[i]=false;h.lock[i]=false}}
+    else for(let i=0;i<h.n;i++)if(i!==p&&h.acted[i])h.lock[i]=true; // 모자란 레이즈: 다시 레이즈할 권리는 안 열림
+    h.acted[p]=true}
   afterAction(h,p);
 }
 function afterAction(h,p){
@@ -50,7 +53,7 @@ function afterAction(h,p){
   // 베팅 라운드 끝
   const actors=live(h).filter(i=>h.stacks[i]>0).length;
   if(h.street===3||actors<=1){h.board=h.runout.slice();h.street=3;finish(h);return}
-  h.street++;h.board=h.runout.slice(0,[0,3,4,5][h.street]);h.si.fill(0);h.cur=0;h.acted.fill(false);h.lastRaise=BB;h.raises=0;
+  h.street++;h.board=h.runout.slice(0,[0,3,4,5][h.street]);h.si.fill(0);h.cur=0;h.acted.fill(false);h.lock.fill(false);h.lastRaise=BB;h.raises=0;
   h.toAct=nextFrom(h,h.btn,i=>canAct(h,i));
 }
 function finish(h){

@@ -4,6 +4,12 @@ const SUPABASE_URL='https://srzsxjxmiupmzfxoogxp.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyenN4anhtaXVwbXpmeG9vZ3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMTQzNjIsImV4cCI6MjEwNzY5MDM2Mn0.y1PzRlqUSAeUYd4A85Y-een0UOKRV2BmwrSpE_Ywq8c';
 
 const toast=(()=>{let t=null;return msg=>{const el=document.getElementById('toast');el.textContent=msg;el.hidden=false;clearTimeout(t);t=setTimeout(()=>el.hidden=true,2600)}})();
+// 기기 ID: 브라우저마다 한 번 만들어서 계속 씀 (같은 기기에서 친 판끼리 묶어서 분석하기 위함)
+const DEVICE_ID=(()=>{
+  let id=null;try{id=localStorage.getItem('deviceId')}catch(e){}
+  if(!id){id=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));try{localStorage.setItem('deviceId',id)}catch(e){}}
+  return id;
+})();
 const Rec=(()=>{
   const configured=!SUPABASE_URL.includes('YOUR-PROJECT')&&!SUPABASE_ANON_KEY.includes('YOUR-ANON');
   const sb=configured&&window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
@@ -13,7 +19,7 @@ const Rec=(()=>{
     if(!sb)return;
     const {game,mode,human,ai,win,...detail}=rec;
     const len=game==='yacht'?12:(detail.hands||[]).length;
-    const {error}=await sb.from('plays').insert({game,mode,human,ai,win,len,detail});
+    const {error}=await sb.from('plays').insert({game,mode,human,ai,win,len,detail:{...detail,device:DEVICE_ID}});
     if(!error){toast('기록 저장됨');Records.refresh();return}
     if(!retry){setTimeout(()=>save(rec,true),800+Math.random()*800);return}
     toast('기록을 저장하지 못했어요. 인터넷 연결을 확인해 주세요');
@@ -50,4 +56,5 @@ const Records={
   }
 };
 Records.refresh();
+document.getElementById('r-device').textContent='이 기기 ID: '+DEVICE_ID.slice(0,8);
 document.querySelector('.nav button[data-g="records"]').addEventListener('click',()=>Records.refresh());

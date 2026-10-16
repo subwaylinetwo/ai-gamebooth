@@ -83,6 +83,8 @@ select option{background:#22343a}
 .ailine{display:flex;gap:var(--p6);align-items:flex-start}
 .ailine .col{flex:1;min-width:0}
 .ailine .note{margin-top:var(--p2)}
+/* AI 계산 줄은 비어 있어도 자리를 잡아 둬서, 글자가 생겨도 화면 높이가 변하지 않게 */
+#y-aiInfo,#y-aiInfo:empty{display:block;min-height:calc(var(--p)*14)}
 .tray{margin:var(--p4) 0 0;padding:var(--p3) var(--p4) var(--p2)}
 .status{text-align:center;color:var(--muted);min-height:calc(var(--p)*14)}
 .dice{display:flex;justify-content:center;gap:var(--p6);padding:var(--p12) 0 var(--p3)}
